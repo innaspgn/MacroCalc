@@ -15,10 +15,9 @@ def _get_users_worksheet():
         st.error("В Secrets не найдены sheet_url или gcp_service_account")
         return None
     try:
-        scopes = [
-            "https://googleapis.com",
-            "https://googleapis.com"
-        ]
+        base = "https://www." + "googleapis.com" + "/auth/"
+        scopes = [base + "spreadsheets", base + "drive"]
+
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
         client = gspread.authorize(creds)
         sh = client.open_by_url(st.secrets["sheet_url"])
