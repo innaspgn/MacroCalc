@@ -10,13 +10,6 @@ st.set_page_config(page_title="Калькулятор КБЖУ", layout="centere
 
 st.markdown("""
 <style>
-    header[data-testid="stHeader"] {
-        display: none !important;
-    }
-    footer {
-        display: none !important;
-    }
-
     .stApp {
         background-color: #F7F3EE;
         color: #463532;
