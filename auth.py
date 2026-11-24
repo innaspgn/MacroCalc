@@ -11,9 +11,10 @@ def _hash_password(password: str) -> str:
     return hashlib.sha256(password.strip().encode("utf-8")).hexdigest()
 
 def _get_users_worksheet():
+    if "gcp_service_account" not in st.secrets or "sheet_url" not in st.secrets:
+        st.error("В Secrets не найдены sheet_url или gcp_service_account")
+        return None
     try:
-        if "gcp_service_account" not in st.secrets or "sheet_url" not in st.secrets:
-            return None
         scopes = [
             "https://googleapis.com",
             "https://googleapis.com"
@@ -25,7 +26,8 @@ def _get_users_worksheet():
             return sh.worksheet("users")
         except Exception:
             return sh.add_worksheet(title="users", rows=100, cols=5)
-    except Exception:
+    except Exception as e:
+        st.error(f"Ошибка подключения к Google Таблице: {e}")
         return None
 
 def load_users() -> dict:
