@@ -6,7 +6,7 @@ from menu_logic import build_ration_plan
 from recipe_calculator import render_recipe_calculator
 
 CATEGORIES = ["Завтрак", "Обед", "Ужин", "Перекус", "Десерт"]
-COOK_TIMES = [5, 10, 15, 20, 30, 40, 50, 60]
+COOK_TIMES = [10, 15, 20, 30, 40, 60]
 SUB_TYPES = ["Не применимо", "Соленые", "Сладкие", "С выпечкой", "Шоколадные", "С охлаждением"]
 PROTEIN_TYPES = ["Любой", "Мясо и птица", "Рыба и морепродукты", "Без мяса/рыбы"]
 
@@ -19,17 +19,16 @@ def show_builder_screen(data: dict, go_to):
     st.subheader(f"Конструктор меню на {date_str}")
 
     tab_gen, tab_manual, tab_db, tab_calc = st.tabs([
-        "Пересобрать день по фильтрам",
-        "Добавить готовое блюдо в этот день",
-        "Моя книга готовых блюд",
-        "Калькулятор сложного рецепта"
+        "Пересобрать день",
+        "Добавить в день",
+        "Книга блюд",
+        "Калькулятор рецепта"
     ])
 
     with tab_gen:
         mode_choice = st.radio("Режим сборки:", ["Всё заново", "Добавить недостающие"], horizontal=True)
         mode_code = "all" if mode_choice == "Всё заново" else "missing"
 
-        st.divider()
         cook_time = st.selectbox(
             "Готовка не дольше:",
             ["Не важно", "10", "15", "20", "30", "40"],
@@ -41,9 +40,8 @@ def show_builder_screen(data: dict, go_to):
         allow_store_snacks = st.toggle("Готовые продукты из магазина в перекусах", value=True)
         cook_two_days = st.checkbox("Готовить на 2 дня (сохранить обед и ужин также на следующий день)", value=False)
 
-        st.divider()
         if len(data["dishes"]) == 0:
-            st.warning("Ваша книга блюд пока пуста. Сначала добавьте блюда во вкладке «Моя книга готовых блюд».")
+            st.warning("Ваша книга блюд пока пуста. Сначала добавьте блюда во вкладке «Книга блюд».")
         else:
             if st.button("Пересобрать день", type="primary", use_container_width=True):
                 filters = {
@@ -68,54 +66,79 @@ def show_builder_screen(data: dict, go_to):
                 go_to("ration")
     with tab_manual:
         if not data["dishes"]:
-            st.info("Сначала внесите блюда во вкладке «Моя книга готовых блюд».")
+            st.info("Сначала внесите блюда во вкладке «Книга блюд».")
         else:
-            dish_names = [d["name"] for d in data["dishes"]]
-            sel_dish_name = st.selectbox("Выберите готовое блюдо", dish_names)
-            dish_obj = next(d for d in data["dishes"] if d["name"] == sel_dish_name)
-            
-            meal_slot = st.selectbox(
-                "Прием пищи",
-                CATEGORIES,
-                index=CATEGORIES.index(dish_obj["category"]) if dish_obj["category"] in CATEGORIES else 0
+            m_col1, m_col2 = st.columns([1.5, 1])
+            m_search = m_col1.text_input(
+                "Быстрый поиск блюда",
+                placeholder="Начните вводить название...",
+                key="manual_dish_search"
             )
-            grams = st.number_input("Вес порции (г)", min_value=10, max_value=2000, value=200, step=10)
-            
-            factor = grams / 100
-            k = round(dish_obj["kcal"] * factor)
-            p = round(dish_obj["protein"] * factor, 1)
-            f = round(dish_obj["fat"] * factor, 1)
-            c = round(dish_obj["carbs"] * factor, 1)
-            
-            st.caption(f"КБЖУ порции: {k} ккал | Белки: {p} г | Жиры: {f} г | Углеводы: {c} г")
-            
-            if st.button("Добавить в рацион дня", type="primary", use_container_width=True):
-                current_entries = get_day_diary(date_str)
-                current_entries.append({
-                    "meal": meal_slot,
-                    "name": sel_dish_name,
-                    "grams": grams,
-                    "kcal": k,
-                    "protein": p,
-                    "fat": f,
-                    "carbs": c
-                })
-                save_day_diary(date_str, current_entries)
-                st.success("Блюдо добавлено в рацион")
-                go_to("ration")
+            m_cat_filter = m_col2.selectbox(
+                "Категория",
+                ["Все категории"] + CATEGORIES,
+                key="manual_dish_cat"
+            )
+
+            filtered_manual = data["dishes"]
+            if m_cat_filter != "Все категории":
+                filtered_manual = [d for d in filtered_manual if d.get("category") == m_cat_filter]
+            if m_search.strip():
+                q = m_search.strip().lower()
+                filtered_manual = [d for d in filtered_manual if q in d["name"].lower()]
+
+            if not filtered_manual:
+                st.warning("По вашему запросу блюд не найдено.")
+            else:
+                dish_names = [d["name"] for d in filtered_manual]
+                sel_dish_name = st.selectbox("Выберите готовое блюдо", dish_names)
+                dish_obj = next(d for d in filtered_manual if d["name"] == sel_dish_name)
+                
+                meal_slot = st.selectbox(
+                    "Прием пищи",
+                    CATEGORIES,
+                    index=CATEGORIES.index(dish_obj["category"]) if dish_obj["category"] in CATEGORIES else 0
+                )
+                grams = st.number_input("Вес порции (г)", min_value=10, max_value=2000, value=200, step=10)
+                
+                factor = grams / 100
+                k = round(dish_obj["kcal"] * factor)
+                p = round(dish_obj["protein"] * factor, 1)
+                f = round(dish_obj["fat"] * factor, 1)
+                c = round(dish_obj["carbs"] * factor, 1)
+                
+                st.caption(f"КБЖУ порции: {k} ккал | Белки: {p} г | Жиры: {f} г | Углеводы: {c} г")
+                
+                if st.button("Добавить в рацион дня", type="primary", use_container_width=True):
+                    current_entries = get_day_diary(date_str)
+                    current_entries.append({
+                        "meal": meal_slot,
+                        "name": sel_dish_name,
+                        "grams": grams,
+                        "kcal": k,
+                        "protein": p,
+                        "fat": f,
+                        "carbs": c
+                    })
+                    save_day_diary(date_str, current_entries)
+                    st.success("Блюдо добавлено в рацион")
+                    go_to("ration")
     with tab_db:
+        if "dish_form_key" not in st.session_state:
+            st.session_state.dish_form_key = 0
+
         st.write("Внесите новое готовое блюдо (указывайте КБЖУ на 100 г готового блюда):")
-        with st.form("add_dish_form", clear_on_submit=True):
-            d_name = st.text_input("Название блюда")
-            d_cat = st.selectbox("Категория", CATEGORIES)
+        with st.form(f"add_dish_form_{st.session_state.dish_form_key}"):
+            d_name = st.text_input("Название блюда", value="")
+            d_cat = st.selectbox("Категория", CATEGORIES, index=0)
             d_time = st.selectbox("Время готовки (мин)", COOK_TIMES, index=2)
-            d_store = st.checkbox("Это готовый продукт из магазина (для перекусов)")
-            d_sub = st.selectbox("Тип (для завтраков и десертов)", SUB_TYPES)
-            d_prot_type = st.selectbox("Основной белок (для обеда/ужина)", PROTEIN_TYPES)
-            d_kcal = st.number_input("Ккал на 100 г", min_value=0.0, step=1.0)
-            d_p = st.number_input("Белки на 100 г (г)", min_value=0.0, step=0.1)
-            d_f = st.number_input("Жиры на 100 г (г)", min_value=0.0, step=0.1)
-            d_c = st.number_input("Углеводы на 100 г (г)", min_value=0.0, step=0.1)
+            d_store = st.checkbox("Это готовый продукт из магазина (для перекусов)", value=False)
+            d_sub = st.selectbox("Тип (для завтраков и десертов)", SUB_TYPES, index=0)
+            d_prot_type = st.selectbox("Основной белок (для обеда/ужина)", PROTEIN_TYPES, index=0)
+            d_kcal = st.number_input("Ккал на 100 г", min_value=0.0, value=0.0, step=1.0)
+            d_p = st.number_input("Белки на 100 г (г)", min_value=0.0, value=0.0, step=0.1)
+            d_f = st.number_input("Жиры на 100 г (г)", min_value=0.0, value=0.0, step=0.1)
+            d_c = st.number_input("Углеводы на 100 г (г)", min_value=0.0, value=0.0, step=0.1)
             
             if st.form_submit_button("Сохранить блюдо в мою книгу", use_container_width=True):
                 if d_name.strip():
@@ -131,13 +154,13 @@ def show_builder_screen(data: dict, go_to):
                         "fat": d_f,
                         "carbs": d_c
                     })
+                    st.session_state.dish_form_key += 1
                     st.success(f"Блюдо «{d_name}» добавлено")
                     st.rerun()
                 else:
                     st.error("Введите название блюда")
 
         if data["dishes"]:
-            st.divider()
             st.subheader("Сохраненные блюда")
             
             f_col1, f_col2 = st.columns([1.5, 1])
@@ -161,7 +184,6 @@ def show_builder_screen(data: dict, go_to):
             else:
                 st.info("По вашему запросу блюд не найдено.")
 
-            st.divider()
             st.subheader("Редактировать или удалить блюдо")
             dishes_list = data["dishes"]
             edit_idx = st.selectbox(
