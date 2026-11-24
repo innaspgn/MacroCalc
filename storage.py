@@ -37,10 +37,9 @@ def _get_gsheet():
     try:
         if "gcp_service_account" not in st.secrets or "sheet_url" not in st.secrets:
             return None
-        scopes = [
-            "https://googleapis.com",
-            "https://googleapis.com"
-        ]
+        base = "https://www." + "googleapis.com" + "/auth/"
+        scopes = [base + "spreadsheets", base + "drive"]
+
         creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scopes)
         client = gspread.authorize(creds)
         return client.open_by_url(st.secrets["sheet_url"])
