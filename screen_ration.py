@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import date, timedelta
+from datetime import datetime, timezone, timedelta
 from storage import save_data, get_day_diary, save_day_diary
 
 def show_ration_screen(data: dict, go_to):
@@ -13,7 +13,8 @@ def show_ration_screen(data: dict, go_to):
         if st.button("Пересчитать КБЖУ", use_container_width=True):
             go_to("calc")
 
-    selected_date = st.date_input("Выберите дату рациона", value=date.today())
+    local_today = (datetime.now(timezone.utc) + timedelta(hours=5)).date()
+    selected_date = st.date_input("Выберите дату рациона", value=local_today)
     date_str = selected_date.strftime("%Y-%m-%d")
 
     if data.get("targets_changed"):
