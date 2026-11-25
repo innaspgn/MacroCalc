@@ -44,30 +44,38 @@ def render_recipe_calculator():
             default_f = float(chosen["f"])
             default_c = float(chosen["c"])
 
-        with st.form(f"add_ing_form_{st.session_state.ing_form_key}"):
-            ing_name = st.text_input("Название ингредиента", value=default_name)
-            ing_weight = st.number_input("Вес ингредиента (г)", min_value=1.0, value=100.0, step=5.0)
-            c1, c2 = st.columns(2)
-            ing_kcal = c1.number_input("Ккал на 100 г продукта", min_value=0.0, value=default_kcal, step=1.0)
-            ing_p = c2.number_input("Белки на 100 г (г)", min_value=0.0, value=default_p, step=0.1)
-            ing_f = c1.number_input("Жиры на 100 г (г)", min_value=0.0, value=default_f, step=0.1)
-            ing_c = c2.number_input("Углеводы на 100 г (г)", min_value=0.0, value=default_c, step=0.1)
+        fk = f"{st.session_state.ing_form_key}_{template_options.index(selected_tpl)}"
 
-            if st.form_submit_button("Добавить ингредиент в список", use_container_width=True):
-                if ing_name.strip():
-                    factor = ing_weight / 100.0
-                    st.session_state.recipe_ingredients.append({
-                        "Ингредиент": ing_name.strip(),
-                        "Вес (г)": ing_weight,
-                        "Ккал": round(ing_kcal * factor, 1),
-                        "Белки": round(ing_p * factor, 1),
-                        "Жиры": round(ing_f * factor, 1),
-                        "Углеводы": round(ing_c * factor, 1)
-                    })
-                    st.session_state.ing_form_key += 1
-                    st.rerun()
-                else:
-                    st.error("Введите название ингредиента")
+        ing_name = st.text_input("Название ингредиента", value=default_name, key=f"name_{fk}")
+        ing_weight = st.number_input("Вес ингредиента (г)", min_value=1.0, value=100.0, step=5.0, key=f"weight_{fk}")
+        c1, c2 = st.columns(2)
+        ing_kcal = c1.number_input("Ккал на 100 г продукта", min_value=0.0, value=default_kcal, step=1.0, key=f"kcal_{fk}")
+        ing_p = c2.number_input("Белки на 100 г (г)", min_value=0.0, value=default_p, step=0.1, key=f"p_{fk}")
+        ing_f = c1.number_input("Жиры на 100 г (г)", min_value=0.0, value=default_f, step=0.1, key=f"f_{fk}")
+        ing_c = c2.number_input("Углеводы на 100 г (г)", min_value=0.0, value=default_c, step=0.1, key=f"c_{fk}")
+
+        factor = ing_weight / 100.0
+        st.caption(
+            f"На {ing_weight:g} г получится: **{round(ing_kcal * factor, 1)} ккал** | "
+            f"Белки: **{round(ing_p * factor, 1)} г** | "
+            f"Жиры: **{round(ing_f * factor, 1)} г** | "
+            f"Углеводы: **{round(ing_c * factor, 1)} г**"
+        )
+
+        if st.button("Добавить ингредиент в список", type="primary", use_container_width=True, key=f"btn_{st.session_state.ing_form_key}"):
+            if ing_name.strip():
+                st.session_state.recipe_ingredients.append({
+                    "Ингредиент": ing_name.strip(),
+                    "Вес (г)": ing_weight,
+                    "Ккал": round(ing_kcal * factor, 1),
+                    "Белки": round(ing_p * factor, 1),
+                    "Жиры": round(ing_f * factor, 1),
+                    "Углеводы": round(ing_c * factor, 1)
+                })
+                st.session_state.ing_form_key += 1
+                st.rerun()
+            else:
+                st.error("Введите название ингредиента")
     if st.session_state.recipe_ingredients:
         st.subheader("Состав вашего рецепта")
         df_ing = pd.DataFrame(st.session_state.recipe_ingredients)
