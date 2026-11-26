@@ -140,9 +140,15 @@ def add_custom_ingredient(ing_dict: dict):
     save_data(data)
 def delete_custom_ingredient(ing_name: str):
     data = load_data()
+    target = ing_name.strip().lower()
     if "custom_ingredients" in data:
         data["custom_ingredients"] = [
             x for x in data["custom_ingredients"]
-            if x["name"].strip().lower() != ing_name.strip().lower()
+            if x["name"].strip().lower() != target
         ]
-        save_data(data)
+    if "dishes" in data:
+        data["dishes"] = [
+            d for d in data["dishes"]
+            if d["name"].strip().lower() != target
+        ]
+    save_data(data)
