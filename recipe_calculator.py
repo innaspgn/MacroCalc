@@ -4,7 +4,7 @@ from storage import add_dish, load_data, add_custom_ingredient
 from base_products import BASE_PRODUCTS
 
 CATEGORIES = ["Завтрак", "Обед", "Ужин", "Перекус", "Десерт"]
-COOK_TIMES =
+COOK_TIMES = list((5, 10, 15, 20, 30, 40, 60))
 SUB_TYPES = ["Не применимо", "Соленые", "Сладкие", "С выпечкой", "Шоколадные", "С охлаждением"]
 PROTEIN_TYPES = ["Любой", "Мясо и птица", "Рыба и морепродукты", "Без мяса/рыбы"]
 
