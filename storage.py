@@ -128,3 +128,13 @@ def delete_user_data(username: str):
     file_path = f"user_data_{username}.json"
     if os.path.exists(file_path):
         os.remove(file_path)
+def add_custom_ingredient(ing_dict: dict):
+    data = load_data()
+    if "custom_ingredients" not in data:
+        data["custom_ingredients"] = []
+    data["custom_ingredients"] = [
+        x for x in data["custom_ingredients"]
+        if x["name"].strip().lower() != ing_dict["name"].strip().lower()
+    ]
+    data["custom_ingredients"].append(ing_dict)
+    save_data(data)
