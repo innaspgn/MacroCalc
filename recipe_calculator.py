@@ -105,7 +105,7 @@ def render_recipe_calculator():
             "Итоговый вес готового блюда после уварки/ужарки (г):",
             min_value=10.0,
             value=float(round(raw_weight)),
-            step=10.0
+            step=10.0,
             key=f"cooked_w_{round(raw_weight, 1)}"
         )
 
