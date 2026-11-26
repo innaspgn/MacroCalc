@@ -106,6 +106,7 @@ def render_recipe_calculator():
             min_value=10.0,
             value=float(round(raw_weight)),
             step=10.0
+            key=f"cooked_w_{round(raw_weight, 1)}"
         )
 
         final_kcal = round((total_kcal / cooked_weight) * 100, 1)
