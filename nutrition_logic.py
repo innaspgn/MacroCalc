@@ -1,79 +1,71 @@
 ACTIVITY_MULTIPLIERS = {
-    "Сидячая работа, минимум движения и тренировок": 1.2,
-    "Легкая активность (1–3 легкие тренировки в неделю или прогулки)": 1.375,
-    "Средняя активность (3–5 тренировок средней интенсивности в неделю)": 1.55,
-    "Высокая активность (интенсивные тренировки 5–7 раз в неделю или физический труд)": 1.725
+    "Минимальная (сидячий образ жизни, нет тренировок)": 1.2,
+    "Низкая (1–2 легкие тренировки в неделю)": 1.375,
+    "Средняя (3–4 тренировки в неделю)": 1.55,
+    "Высокая (5–6 интенсивных тренировок в неделю)": 1.725,
+    "Экстремальная (ежедневные тренировки / физический труд)": 1.9
 }
 
-def calculate_bmi(weight_kg: float, height_cm: float) -> tuple[float, str]:
-    height_m = height_cm / 100
-    bmi = round(weight_kg / (height_m ** 2), 1)
+GOAL_LIST = [
+    "Похудение",
+    "Рекомпозиция (снижение жира + рост мышц)",
+    "Поддержание веса",
+    "Набор массы"
+]
+
+def calculate_bmi(weight: float, height: float) -> tuple:
+    h_m = height / 100.0
+    bmi = round(weight / (h_m ** 2), 1)
     if bmi < 18.5:
-        status = "Дефицит массы тела"
-    elif bmi < 25:
+        status = "Недостаток веса"
+    elif bmi < 25.0:
         status = "Норма"
-    elif bmi < 30:
-        status = "Избыточная масса тела"
+    elif bmi < 30.0:
+        status = "Избыточный вес"
     else:
         status = "Ожирение"
     return bmi, status
 
-def calculate_targets(profile: dict) -> dict:
-    weight = profile["weight"]
-    height = profile["height"]
-    age = profile["age"]
-    gender = profile.get("gender", "Женский")
-    activity_str = profile.get("activity", "")
-    act_mult = ACTIVITY_MULTIPLIERS.get(activity_str, 1.375)
-    goal = profile.get("goal", "Рекомпозиция")
-    
-    if gender == "Мужской":
-        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
+def calculate_targets(gender: str, age: int, height: float, weight: float, activity: str, goal: str) -> dict:
+    # Формула Миффлина — Сан-Жеора
+    if gender == "Женский":
+        bmr = 10 * weight + 6.25 * height - 5 * age - 161
     else:
-        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161
-        
-    tdee = bmr * act_mult
-    
-    if goal == "Сушка":
-        target_kcal = tdee * 0.85
-        p_per_kg = 1.7
+        bmr = 10 * weight + 6.25 * height - 5 * age + 5
+
+    mult = ACTIVITY_MULTIPLIERS.get(activity, 1.375)
+    tdee = bmr * mult
+
+    if goal == "Похудение":
+        kcal = round(tdee * 0.85)
+        p_per_kg = 2.0
         f_per_kg = 0.8
-    elif goal == "Набор":
-        target_kcal = tdee * 1.125
+    elif "Рекомпозиция" in goal:
+        kcal = round(tdee)
         p_per_kg = 1.9
+        f_per_kg = 0.85
+    elif "Поддержание" in goal:
+        kcal = round(tdee)
+        p_per_kg = 1.2
+        f_per_kg = 1.0
+    else:  # Набор массы
+        kcal = round(tdee * 1.12)
+        p_per_kg = 1.8
         f_per_kg = 1.1
-    else:
-        target_kcal = tdee
-        f_per_kg = 0.95
-        if act_mult <= 1.2:
-            p_per_kg = 1.0
-        elif act_mult <= 1.375:
-            p_per_kg = 1.35
-        else:
-            p_per_kg = 1.7
 
-    hormones = profile.get("hormones", "Нет особенностей")
-    if hormones == "Гипотиреоз":
-        target_kcal *= 0.95
-    elif hormones == "Инсулинорезистентность / СПКЯ":
-        p_per_kg = min(p_per_kg + 0.15, 2.2)
+    protein = round(weight * p_per_kg)
+    fat = round(weight * f_per_kg)
 
-    protein_g = round(weight * p_per_kg)
-    fat_g = max(round(weight * f_per_kg), 45)
-    
-    protein_kcal = protein_g * 4
-    fat_kcal = fat_g * 9
-    
-    raw_carbs_g = round((target_kcal - protein_kcal - fat_kcal) / 4)
-    carbs_g = max(raw_carbs_g, 115)
-    
-    final_kcal = (protein_g * 4) + (fat_g * 9) + (carbs_g * 4)
-    
+    # Оставшиеся калории направляем на углеводы (минимум 1.5 г/кг)
+    rem_kcal = kcal - (protein * 4 + fat * 9)
+    carbs = max(round(rem_kcal / 4), round(weight * 1.5))
+
+    # Итоговую калорийность синхронизируем с суммой БЖУ
+    final_kcal = protein * 4 + fat * 9 + carbs * 4
+
     return {
-        "bmr": round(bmr),
-        "tdee": round(tdee),
         "kcal": final_kcal,
-        "protein": protein_g,
-        "fat": fat_g,
-        "carbs": carbs_g
+        "protein": protein,
+        "fat": fat,
+        "carbs": carbs
     }
