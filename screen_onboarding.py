@@ -21,7 +21,7 @@ def show_calc_screen(data: dict, go_to):
     bmi, bmi_status = calculate_bmi(weight, height)
     st.info(f"Ваш текущий ИМТ: **{bmi}** ({bmi_status})")
 
-    goals_list = ["Сушка", "Рекомпозиция", "Набор"]
+    goals_list = ["Похудение", "Рекомпозиция (снижение жира + рост мышц)", "Поддержание веса", "Набор массы"]
     curr_goal = data["profile"]["goal"]
     goal = st.selectbox("Ваша цель от тренировок", goals_list, index=goals_list.index(curr_goal) if curr_goal in goals_list else 1)
     
