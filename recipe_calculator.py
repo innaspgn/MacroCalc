@@ -242,3 +242,17 @@ def render_recipe_calculator():
                     st.rerun()
                 else:
                     st.error("Укажите название готового блюда")
+st.write("")
+_u_data = load_data()
+_c_items = _u_data.get("custom_ingredients", [])
+if _c_items:
+    with st.expander("Мои сохраненные ингредиенты в справочнике (удаление)"):
+        _del_name = st.selectbox(
+            "Выберите ваш ингредиент для удаления:",
+            [x["name"] for x in _c_items],
+            key="del_custom_ing_sel"
+        )
+        if st.button("Удалить ингредиент из справочника", key="del_custom_ing_btn"):
+            delete_custom_ingredient(_del_name)
+            st.success(f"Ингредиент «{_del_name}» удален")
+            st.rerun()
