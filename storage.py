@@ -138,3 +138,11 @@ def add_custom_ingredient(ing_dict: dict):
     ]
     data["custom_ingredients"].append(ing_dict)
     save_data(data)
+def delete_custom_ingredient(ing_name: str):
+    data = load_data()
+    if "custom_ingredients" in data:
+        data["custom_ingredients"] = [
+            x for x in data["custom_ingredients"]
+            if x["name"].strip().lower() != ing_name.strip().lower()
+        ]
+        save_data(data)
